@@ -180,7 +180,7 @@ if ($res) {
                 }
                 $balance = (float)($r['balance'] ?? 0);
             ?>
-              <tr class="hover:bg-gray-50 <?php echo $balance > 0 ? 'bg-yellow-50' : ''; ?>">
+              <tr class="<?php echo $balance > 0 ? 'bg-gray-50' : ''; ?>">
                 <td class="select-col px-4 py-3 text-sm text-gray-700">
                   <input class="row-checkbox" type="checkbox" value="<?php echo intval($r['id']); ?>" aria-label="Select bilty <?php echo htmlspecialchars($r['bilty_no']); ?>">
                 </td>
@@ -235,7 +235,7 @@ if ($res) {
            }
            $balance = (float)($r['balance'] ?? 0);
         ?>
-          <article class="bg-white shadow rounded-lg p-4 <?php echo $balance > 0 ? 'border border-yellow-300' : ''; ?>">
+          <article class="bg-white shadow rounded-lg p-4 <?php echo $balance > 0 ? 'border border-gray-200' : ''; ?>">
             <div class="flex items-start justify-between">
               <div>
                 <div class="flex items-center gap-2">
