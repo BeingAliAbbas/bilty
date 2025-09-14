@@ -11,7 +11,7 @@ abstract class Controller
         ob_start();
         
         // Include the view file
-        $viewPath = "../app/views/{$viewFile}.php";
+        $viewPath = "app/views/{$viewFile}.php";
         if (!file_exists($viewPath)) {
             throw new Exception("View file not found: {$viewPath}");
         }

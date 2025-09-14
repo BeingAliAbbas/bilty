@@ -1,7 +1,7 @@
 <?php
 
 require_once 'Controller.php';
-require_once '../app/models/Company.php';
+require_once 'app/models/Company.php';
 
 class CompanyController extends Controller
 {

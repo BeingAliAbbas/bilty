@@ -1,8 +1,8 @@
 <?php
 
 require_once 'Controller.php';
-require_once '../app/models/Consignment.php';
-require_once '../app/models/Company.php';
+require_once 'app/models/Consignment.php';
+require_once 'app/models/Company.php';
 
 class ConsignmentController extends Controller
 {

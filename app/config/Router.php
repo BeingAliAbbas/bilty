@@ -48,7 +48,7 @@ class Router
 
         // 404 handler
         http_response_code(404);
-        include '../app/views/errors/404.php';
+        include 'app/views/errors/404.php';
     }
 
     private function getRequestPath()
@@ -100,7 +100,7 @@ class Router
         if (is_string($handler) && strpos($handler, '@') !== false) {
             list($controller, $method) = explode('@', $handler);
             
-            $controllerFile = "../app/controllers/{$controller}.php";
+            $controllerFile = "app/controllers/{$controller}.php";
             if (!file_exists($controllerFile)) {
                 throw new Exception("Controller file not found: {$controllerFile}");
             }

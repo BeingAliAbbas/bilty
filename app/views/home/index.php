@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <?php include '../app/views/layout/head.php'; ?>
+  <?php include 'app/views/layout/head.php'; ?>
   <title><?php echo isset($title) ? htmlspecialchars($title) . ' — Bilty Management' : 'Bilty Management'; ?></title>
 </head>
 <body class="bg-page min-h-screen text-gray-800">
-  <?php include '../app/views/layout/header.php'; ?>
+  <?php include 'app/views/layout/header.php'; ?>
 
   <main class="max-w-5xl mx-auto py-12 px-4 md:px-6">
     <section class="bg-white/80 rounded-xl shadow-lg p-8">

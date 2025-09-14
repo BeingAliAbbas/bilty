@@ -21,7 +21,7 @@
   .btn-primary { background-color: var(--primary); color: #fff; padding: .45rem .9rem; border-radius: .375rem; display:inline-block; text-decoration:none; }
   html,body { color: var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 </style>
-<link href="/assets/css/output.css" rel="stylesheet">
+<link href="assets/css/output.css" rel="stylesheet">
 <!-- Tailwind runtime config (MUST be before the CDN script) -->
 <script>
   window.tailwind = window.tailwind || {};

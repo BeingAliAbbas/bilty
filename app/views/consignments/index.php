@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <?php include '../app/views/layout/head.php'; ?>
+  <?php include 'app/views/layout/head.php'; ?>
   <title><?php echo isset($title) ? htmlspecialchars($title) . ' — Bilty Management' : 'Bilty Management'; ?></title>
   <style>
     /* simple helper styles for selection UI */
@@ -13,7 +13,7 @@
   </style>
 </head>
 <body class="bg-page min-h-screen text-gray-800">
-  <?php include '../app/views/layout/header.php'; ?>
+  <?php include 'app/views/layout/header.php'; ?>
 
   <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-6">
