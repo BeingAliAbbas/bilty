@@ -1,10 +1,17 @@
 <?php
 
-// Front Controller - Route all requests through MVC structure
+// Move the old index.php to preserve it
+if (file_exists('index_old.php')) {
+    // Don't overwrite if backup already exists
+} else {
+    if (file_exists('index.php')) {
+        rename('index.php', 'index_old.php');
+    }
+}
 
 // Autoload dependencies
-require_once 'app/config/Database.php';
-require_once 'app/config/Router.php';
+require_once '../app/config/Database.php';
+require_once '../app/config/Router.php';
 
 // Initialize router
 $router = new Router();
