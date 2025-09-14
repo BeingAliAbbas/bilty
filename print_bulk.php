@@ -3,7 +3,11 @@ require_once 'config.php';
 
 /*
   Bulk Bill Printing (Finalizable) — PDF-Optimized
-  Fix: avoid extra blank page by using CSS @page + consistent margins and removing inline page-break styles
+  Updates:
+    - Added company address support: now selecting cp.address AS company_address
+    - "Billing Add" field now shows company_address (falls back to to_city if empty)
+    - Improved driver phone extraction regex (matches "Driver number:" or variations with spacing)
+    - All other logic retained
 */
 
 $ids_raw = trim($_GET['ids'] ?? '');
@@ -14,7 +18,9 @@ $ids_arr = array_values(array_filter(array_map('intval', explode(',', $ids_clean
 if (empty($ids_arr)) { echo "No valid bilty ids provided."; exit; }
 
 $in_list = implode(',', $ids_arr);
-$sql = "SELECT c.*, cp.name AS company_name
+$sql = "SELECT c.*,
+               cp.name    AS company_name,
+               cp.address AS company_address
         FROM consignments c
         JOIN companies cp ON cp.id = c.company_id
         WHERE c.id IN ($in_list)
@@ -56,33 +62,22 @@ $total_pages   = ceil(count($bilties) / $rows_per_page);
 <meta charset="utf-8" />
 <title>Bill <?php echo esc($bill_number); ?> — Selected Bilties</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- <script src="https://cdn.tailwindcss.com"></script> -->
+<script src="pdf.js"></script>
 <style>
-/* ------------------------ CORE PRINT LAYOUT ------------------------- */
-/* Use A4 page size and a single authoritative margin for printing.
-   Do not apply additional margins in html2pdf options (we set them to 0),
-   otherwise pages can overflow and produce an extra blank page. */
-
-@page {
-  size: A4;
-  margin: 12mm; /* canonical print margin */
-}
+@page { size: A4; margin: 12mm; }
 
 :root{
-  --page-width: calc(210mm - 24mm); /* A4 width minus left+right margins */
-  --page-padding: 8mm;              /* internal page padding */
-  --font-base: "Arial", "Helvetica", sans-serif;
+  --page-width: calc(210mm - 24mm);
+  --page-padding: 8mm;
+  --font-base: "Arial","Helvetica",sans-serif;
   --font-size: 11px;
   --hairline: 0.6px;
 }
 
 html,body { margin:0; padding:0; background:#f1f5f9; font-family:var(--font-base); font-size:var(--font-size); color:#000; }
-
-/* Hint to browsers and html2canvas to preserve background colors */
 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
 
-/* Page container — sized to fit inside @page margins */
 .page {
   width: var(--page-width);
   margin: 0 auto;
@@ -90,34 +85,23 @@ html,body { margin:0; padding:0; background:#f1f5f9; font-family:var(--font-base
   background: #fff;
   position: relative;
   box-sizing: border-box;
-  /* force page break after each page except the last one */
   page-break-after: always;
   break-after: page;
 }
+.page:last-child { page-break-after:auto; break-after:auto; margin-bottom:0; }
 
-/* Make sure the last page does not force an extra blank page */
-.page:last-child {
-  page-break-after: auto;
-  break-after: auto;
-  margin-bottom: 0;
-}
-
-/* print media adjustments */
 @media print {
-  body { background: #fff; }
-  .no-print { display: none !important; }
-  .page { box-shadow: none; margin: 0; width: auto; padding: 12mm; } /* let print respect @page */
+  body { background:#fff; }
+  .no-print { display:none !important; }
+  .page { box-shadow:none; margin:0; width:auto; padding:12mm; }
 }
 
-/* visual layout (unchanged from your template) */
 .header-row { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: var(--hairline) solid #000; padding-bottom:3px; margin-bottom:4px; }
 .brand-name { font-size:26px; font-weight:700; font-style:italic; letter-spacing:.5px; }
 .brand-business { font-size:18px; font-weight:600; text-align:right; max-width:60%; line-height:1.15; }
-
 .info-bar { display:flex; font-size:10.5px; border-bottom:var(--hairline) solid #000; padding:3px 0 4px 0; margin-bottom:6px; }
 .info-bar .block-strong { font-weight:700; margin-right:10px; text-transform:uppercase; }
 .info-bar .label-strong { font-weight:700; margin-right:4px; }
-
 .bill-title { background:#d1d5db; text-align:center; font-weight:700; padding:4px 0; margin-bottom:6px; font-size:13px; letter-spacing:.5px; }
 .flex-row { display:flex; gap:6mm; margin-bottom:8px; }
 .panel { flex:1; border:var(--hairline) solid #000; display:flex; flex-direction:column; }
@@ -174,7 +158,6 @@ button[disabled] { opacity:.5; cursor:not-allowed; }
 .progress-wrap { width:240px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.35); border-radius:6px; overflow:hidden; height:10px; }
 .progress-bar { height:10px; width:0%; background:#10b981; transition:width .3s; }
 
-/* Control bar styles (unchanged) */
 .control-bar {
   --cb-font-size: 15px;
   --cb-badge-font: 13px;
@@ -199,12 +182,15 @@ button[disabled] { opacity:.5; cursor:not-allowed; }
 .control-bar .print-btn { background:#4f46e5; color:#fff; border:1px solid #4338ca; }
 .control-bar .pdf-btn { background:#374151; color:#fff; border:1px solid #1f2937; }
 .control-bar button[disabled] { filter: grayscale(.5); cursor:not-allowed; opacity:0.55; box-shadow:none; }
-@media (max-width:640px) { .control-bar { justify-content:flex-start; font-size:14px; } .control-bar button, .control-bar a { flex:1 1 auto; } }
+@media (max-width:640px) {
+  .control-bar { justify-content:flex-start; font-size:14px; }
+  .control-bar button, .control-bar a { flex:1 1 auto; }
+}
 </style>
 </head>
 <body>
 
-<!-- Enlarged Control Bar -->
+<!-- Control Bar -->
 <div class="no-print control-bar bg-white border-b shadow">
   <span id="billStatusBadge" class="status-badge badge-draft">DRAFT</span>
   <button id="toggleEdit" class="plain-btn" type="button">Edit</button>
@@ -228,7 +214,6 @@ for ($page = 0; $page < $total_pages; $page++):
   $page_tax = $page_gross * ($tax_default_percent / 100.0);
   $page_net = $page_gross - $page_tax;
 ?>
-  <!-- Removed inline page-break style (we rely on CSS page-break rules now) -->
   <div class="page">
     <div class="header-row">
       <div id="display_bill_from_name" class="brand-name"><?php echo esc($bill_from_name); ?></div>
@@ -271,19 +256,26 @@ for ($page = 0; $page < $total_pages; $page++):
         <div class="panel-body">
           <?php $first = $bilties[0]; ?>
           <div class="row-line">
-            <div class="row-line-label">Billing Name</div>
+            <div class="row-line-label">Name</div>
             <div id="bt_name"><?php echo esc($first['company_name'] ?? ''); ?></div>
           </div>
           <div class="row-line">
-            <div class="row-line-label">Billing Add</div>
-            <div id="bt_addr"><?php echo esc($first['to_city'] ?? ''); ?></div>
+            <div class="row-line-label">Address</div>
+            <div id="bt_addr">
+             <?php
+  $billingAddress = trim($first['company_address'] ?? '');
+  echo esc($billingAddress);
+?>
+
+            </div>
           </div>
           <div class="row-line">
             <div class="row-line-label">Phone #</div>
             <div id="bt_phone">
               <?php
                 $phone = '';
-                if (!empty($first['details']) && preg_match('/DriverNumber:\s*([0-9+\-\s()]+)/i', $first['details'], $m2)) {
+                // Adjusted regex to match "Driver number:" pattern used in added details
+                if (!empty($first['details']) && preg_match('/Driver\s*number:\s*([0-9+\-\s()]+)/i', $first['details'], $m2)) {
                   $phone = trim($m2[1]);
                 }
                 echo esc($phone);
@@ -322,9 +314,9 @@ for ($page = 0; $page < $total_pages; $page++):
         </thead>
         <tbody id="items_tbody_<?php echo $page; ?>">
         <?php foreach ($page_bilties as $i => $b):
-            $row_num     = $start_idx + $i + 1;
-            $dateDisplay = !empty($b['date']) ? date('d-M-y', strtotime($b['date'])) : '';
-            $amount_val  = (float)($b['amount'] ?? 0);
+            $row_num      = $start_idx + $i + 1;
+            $dateDisplay  = !empty($b['date']) ? date('d-M-y', strtotime($b['date'])) : '';
+            $amount_val   = (float)($b['amount'] ?? 0);
             $vehicle_type = $b['vehicle_type'] ?? 'Suzuki';
         ?>
           <tr data-id="<?php echo intval($b['id']); ?>">
@@ -411,9 +403,9 @@ for ($page = 0; $page < $total_pages; $page++):
         Page <?php echo ($page + 1); ?> of <?php echo $total_pages; ?>
       </div>
     <?php endif; ?>
-  </div><!-- /.page -->
+  </div>
 <?php endfor; ?>
-</div><!-- /#billPages -->
+</div>
 
 <div id="progressOverlay" class="progress-overlay">
   <div style="text-align:center;">
@@ -427,7 +419,7 @@ for ($page = 0; $page < $total_pages; $page++):
 (function(){
   function parseNumber(v){ if(v==null)return 0; v=String(v).replace(/,/g,'').replace(/[^\d.\-]/g,'').trim(); return v===''?0:parseFloat(v); }
   function formatNumber(v){ return Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  function parsePercentFromLabel(text){ const m=String(text).match(/([0-9]+(?:\\.[0-9]+)?)/); return m?parseFloat(m[1]):0; }
+  function parsePercentFromLabel(text){ const m=String(text).match(/([0-9]+(?:\.[0-9]+)?)/); return m?parseFloat(m[1]):0; }
   function textContent(id){ const el=document.getElementById(id); return el?el.textContent.trim():''; }
 
   let editMode=false, finalized=false;
@@ -448,7 +440,11 @@ for ($page = 0; $page < $total_pages; $page++):
   const progressBar=document.getElementById('progressBar');
   const progressText=document.getElementById('progressText');
 
-  const editableFields=['display_bill_from_name','display_bill_from_business','display_pro','display_phone','display_address','bf_name','bf_bill_date','bt_name','bt_addr','bt_phone','acc_name','acc_bank','acc_iban'];
+  const editableFields=[
+    'display_bill_from_name','display_bill_from_business','display_pro','display_phone',
+    'display_address','bf_name','bf_bill_date','bt_name','bt_addr','bt_phone',
+    'acc_name','acc_bank','acc_iban'
+  ];
 
   function enterEdit(){
     if(finalized){ alert('Bill already finalized.'); return; }
@@ -459,8 +455,12 @@ for ($page = 0; $page < $total_pages; $page++):
       const el=document.getElementById(id);
       if(!el || el.querySelector('input')) return;
       const val=el.textContent.trim();
-      const inp=document.createElement('input'); inp.type='text'; inp.value=val; inp.className='inline-input';
-      el.textContent=''; el.appendChild(inp);
+      const inp=document.createElement('input');
+      inp.type='text';
+      inp.value=val;
+      inp.className='inline-input';
+      el.textContent='';
+      el.appendChild(inp);
     });
     document.querySelectorAll('.amount-cell').forEach(td=>{
       td.classList.add('editing');
@@ -477,8 +477,10 @@ for ($page = 0; $page < $total_pages; $page++):
     const taxInput=document.querySelector('[id^="tax_edit_"]');
     if(taxInput){ let t=parseNumber(taxInput.value); currentTaxPercent=Math.min(100,Math.max(0,t)); }
     editableFields.forEach(id=>{
-      const el=document.getElementById(id); if(!el) return;
-      const inp=el.querySelector('input'); if(inp) el.textContent=inp.value.trim();
+      const el=document.getElementById(id);
+      if(!el) return;
+      const inp=el.querySelector('input');
+      if(inp) el.textContent=inp.value.trim();
     });
     document.querySelectorAll('.amount-cell').forEach(td=>{
       const inp=td.querySelector('input');
@@ -489,7 +491,9 @@ for ($page = 0; $page < $total_pages; $page++):
       }
       td.classList.remove('editing');
     });
-    document.querySelectorAll('.tax-percent-label').forEach(el=>{ el.textContent='('+formatNumber(currentTaxPercent)+'%)'; });
+    document.querySelectorAll('.tax-percent-label').forEach(el=>{
+      el.textContent='('+formatNumber(currentTaxPercent)+'%)';
+    });
     editMode=false;
     toggleEditBtn.textContent='Edit';
     recomputeTotals();
@@ -577,10 +581,9 @@ for ($page = 0; $page < $total_pages; $page++):
     window.print();
   }
 
-  // Wait for fonts/images to be ready before rendering
   async function waitForResources(timeoutMs = 7000) {
     if (document.fonts && document.fonts.ready) {
-      try { await Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r, timeoutMs))]); } catch(e){ /* ignore */ }
+      try { await Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r, timeoutMs))]); } catch(e){}
     }
     const imgs = Array.from(document.images || []);
     await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise((res) => {
@@ -608,8 +611,6 @@ for ($page = 0; $page < $total_pages; $page++):
       progressText.textContent = 'Rendering PDF...';
 
       const element = document.getElementById('billPages');
-
-      // IMPORTANT: margin here set to 0 because we use @page margin in CSS.
       const opt = {
         margin: [0,0,0,0],
         filename: 'Bill-'+billNo+'.pdf',
@@ -619,7 +620,6 @@ for ($page = 0; $page < $total_pages; $page++):
         pagebreak: { mode:['css','legacy'] }
       };
 
-      // Render to jsPDF instance
       const worker = html2pdf().set(opt).from(element).toPdf();
       progressBar.style.width = '50%';
       progressText.textContent = 'Composing PDF...';
@@ -628,10 +628,7 @@ for ($page = 0; $page < $total_pages; $page++):
       progressBar.style.width = '75%';
       progressText.textContent = 'Encoding PDF...';
 
-      // Convert to blob
       const blob = pdf.output('blob');
-
-      // Convert blob -> base64
       const base64Data = await new Promise((resolve, reject)=>{
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);

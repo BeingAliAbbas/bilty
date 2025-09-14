@@ -297,7 +297,7 @@ if ($export) {
 <meta charset="utf-8">
 <title>Detailed Reports — Bilty Management</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- <script src="https://cdn.tailwindcss.com"></script> -->
 <style>
 :root {
   --primary:#97113a;

@@ -13,7 +13,7 @@ require_once 'config.php';
   <main class="max-w-5xl mx-auto py-12 px-4 md:px-6">
     <section class="bg-white/80 rounded-xl shadow-lg p-8">
       <h1 class="text-3xl md:text-4xl font-bold text-primary mb-4">🚚 Bilty Management System</h1>
-      <p class="text-gray-600 mb-6">Fast, simple way to record and track bilties. Designed for clear screens and quick entry.</p>
+      <!-- <p class="text-gray-600 mb-6">Fast, simple way to record and track bilties. Designed for clear screens and quick entry.</p> -->
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <a href="add_bilty.php" class="block p-6 rounded-lg shadow-sm bg-primary text-white hover:shadow-lg transition">
@@ -32,9 +32,9 @@ require_once 'config.php';
         </a>
       </div>
 
-      <div class="mt-8 text-sm text-gray-600">
+      <!-- <div class="mt-8 text-sm text-gray-600">
         For support, contact your system administrator.
-      </div>
+      </div> -->
     </section>
   </main>
 </body>

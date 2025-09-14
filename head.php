@@ -20,7 +20,7 @@
   .btn-primary { background-color: var(--primary); color: #fff; padding: .45rem .9rem; border-radius: .375rem; display:inline-block; text-decoration:none; }
   html,body { color: var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 </style>
-
+<link href="output.css" rel="stylesheet">
 <!-- Tailwind runtime config (MUST be before the CDN script) -->
 <script>
   window.tailwind = window.tailwind || {};
@@ -37,7 +37,7 @@
 </script>
 
 <!-- Tailwind CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- <script src="https://cdn.tailwindcss.com"></script> -->
 
 <!-- tiny helper style (optional) -->
 <style>
