@@ -1,33 +1,6 @@
 <?php
 require_once 'config.php';
 
-/*
-  A5 Single Bilty Printable (With Control Bar Editing)
-  ----------------------------------------------------
-  Requirements (from user):
-    - Use the same style control bar (Edit / Apply / Print / Save PDF / Reset / Back)
-    - NO bill number / no finalize workflow
-    - A5 size (portrait)
-    - Simpler layout (NOT the same big "Bill" multi-row template)
-    - Allow inline editing of key text fields (company name, address, route text, phone, notes, amount-related fields)
-    - PDF download & server save (uses save_pdf.php; adapt there if needed)
-
-  Notes:
-    - We keep the original bilty_no from the consignments table as a read-only display (the unique reference)
-    - Amount usually = KM * Rate. If user edits KM or Rate or Amount manually in edit mode:
-        * If KM or Rate changed we auto recompute Amount.
-        * If Amount field itself is edited directly (by focusing it), we temporarily pause auto-compute until KM/Rate changes again
-    - Advance & Balance editable (Balance NOT auto recomputed; user decides)
-    - No tax logic here (bility typically a transport docket; tax handled at aggregated billing stage)
-    - Save PDF posts FormData(bilty_no, pdf_data) to save_pdf.php (update save_pdf.php if it only expects bill_no)
-
-  Usage:
-    print_bilty_a5.php?id=123
-    Optional: ?auto=1 to auto open print dialog after load
-
-  Adjust styling / fields as necessary.
-*/
-
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) { echo "Invalid bilty id."; exit; }
 
@@ -85,9 +58,7 @@ $notes = clean_details_text($bilty['details'] ?? '');
 $qty     = n0($bilty['qty'] ?? 0);
 $km      = n0($bilty['km'] ?? 0);
 $rate    = (float)($bilty['rate'] ?? 0);
-$amount  = (float)($bilty['amount'] ?? 0);
-$advance = (float)($bilty['advance'] ?? 0);
-$balance = (float)($bilty['balance'] ?? ($amount - $advance));
+$amount  = (float)($bilty['amount'] ?? ($km * $rate)); // fallback compute
 
 ?>
 <!doctype html>
@@ -185,7 +156,6 @@ html,body {
   max-width: 430px; /* approximate inner width for A5 with margins */
   background:#fff;
   border:1px solid #d1d5db;
-  /* box-shadow:0 2px 8px rgba(0,0,0,.12); */
   padding:14px 16px 18px;
   box-sizing:border-box;
   position:relative;
@@ -409,7 +379,6 @@ html,body {
         <div style="margin-top:6px; font-size:10.5px;">
           <div style="margin-bottom:4px;"><strong>No:</strong> <span><?php echo esc($bilty['bilty_no']); ?></span></div>
           <div style="margin-bottom:4px;"><strong>Date:</strong> <span id="bilty_date" class="editable-block"><?php echo esc($dateDisplay); ?></span></div>
-          
         </div>
       </div>
     </div>
@@ -460,20 +429,14 @@ html,body {
       </div>
     </div>
 
-    <!-- <div id="notes_box" class="notes-box editable-block" style="margin-top:10px;">
-      <?php echo nl2br(esc($notes ?: 'Notes...')); ?>
-    </div> -->
-
     <div class="items-table-wrap">
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width:12%;">Qty</th>
-            <th style="width:16%;">KM</th>
-            <th style="width:16%;">Rate</th>
-            <th style="width:20%;">Advance</th>
-            <th style="width:20%;">Balance</th>
-            <th style="width:16%;">Amount</th>
+            <th style="width:18%;">Qty</th>
+            <th style="width:22%;">KM</th>
+            <th style="width:25%;">Rate</th>
+            <th style="width:35%;">Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -481,8 +444,6 @@ html,body {
             <td class="center amount-cell" data-field="qty" data-type="int"><?php echo $qty; ?></td>
             <td class="center amount-cell" data-field="km" data-type="int"><?php echo $km; ?></td>
             <td class="center amount-cell" data-field="rate" data-type="float"><?php echo n2($rate); ?></td>
-            <td class="center amount-cell" data-field="advance" data-type="float"><?php echo n2($advance); ?></td>
-            <td class="center amount-cell" data-field="balance" data-type="float"><?php echo n2($balance); ?></td>
             <td class="center amount-cell" data-field="amount" data-type="float" data-computed="1"><?php echo n2($amount); ?></td>
           </tr>
         </tbody>
@@ -500,9 +461,6 @@ html,body {
       <div class="signature-area">
         Transporter Signature
       </div>
-      <!-- <div class="print-footer-tag">
-        Printed: <?php echo esc(date('d-M-Y H:i')); ?>
-      </div> -->
     </div>
   </div>
 </div>
@@ -572,24 +530,23 @@ html,body {
         el.appendChild(inp);
       }
     });
-    // Amount cells
+    // Amount table cells -> inputs
     document.querySelectorAll('.amount-cell').forEach(cell=>{
       if(cell.querySelector('input')) return;
       const txt = cell.textContent.trim();
       const inp = document.createElement('input');
-      inp.type='text';
-      inp.value=txt;
+      inp.type = 'text';
+      inp.value = txt;
       inp.className='inline-input';
       inp.style.textAlign='center';
-      cell.innerHTML='';
+      cell.innerHTML = '';
       cell.appendChild(inp);
       if(cell.dataset.field==='amount'){
         inp.addEventListener('input',()=> { manualAmountOverride = true; recompute(); });
       } else {
         inp.addEventListener('input',()=> {
           if(cell.dataset.field==='km' || cell.dataset.field==='rate'){
-            // Changing km or rate re-enables auto compute
-            manualAmountOverride = false;
+            manualAmountOverride = false; // changing km/rate re-enables auto compute
           }
           recompute();
         });
@@ -645,20 +602,18 @@ html,body {
     let km = getFieldVal('km');
     let rate = getFieldVal('rate');
     let qty = getFieldVal('qty');
-    let advance = getFieldVal('advance');
-    let balance = getFieldVal('balance');
     let amountCell = document.querySelector('.amount-cell[data-field="amount"]');
 
     if(!manualAmountOverride){
-      const amount = km * rate; // or qty*rate depending on your business rule
+      const computedAmount = km * rate; // business rule: KM * Rate
       if(editMode && amountCell){
         let inp = amountCell.querySelector('input');
-        if(inp) inp.value = format2(amount);
+        if(inp) inp.value = format2(computedAmount);
       } else if(amountCell){
-        amountCell.textContent = format2(amount);
+        amountCell.textContent = format2(computedAmount);
       }
     } else {
-      // If manually overridden, ensure proper formatting (when leaving edit mode)
+      // If manually overridden, keep user value (formatting will be applied below)
     }
 
     // Update total
