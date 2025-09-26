@@ -108,6 +108,8 @@ function fmtMoney($v){ return number_format((float)$v, 2); }
 <title>Manage Bills</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+ <link href="output.css" rel="stylesheet">
+  <link rel="stylesheet" href="fontawesome/css/all.min.css">
 <style>
 :root {
   --primary: #97113a;

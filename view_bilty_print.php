@@ -4,28 +4,10 @@ require_once 'config.php';
 /*
   A5 Single Bilty Printable (With Control Bar Editing)
   ----------------------------------------------------
-  Requirements (from user):
-    - Use the same style control bar (Edit / Apply / Print / Save PDF / Reset / Back)
-    - NO bill number / no finalize workflow
-    - A5 size (portrait)
-    - Simpler layout (NOT the same big "Bill" multi-row template)
-    - Allow inline editing of key text fields (company name, address, route text, phone, notes, amount-related fields)
-    - PDF download & server save (uses save_pdf.php; adapt there if needed)
-
-  Notes:
-    - We keep the original bilty_no from the consignments table as a read-only display (the unique reference)
-    - Amount usually = KM * Rate. If user edits KM or Rate or Amount manually in edit mode:
-        * If KM or Rate changed we auto recompute Amount.
-        * If Amount field itself is edited directly (by focusing it), we temporarily pause auto-compute until KM/Rate changes again
-    - Advance & Balance editable (Balance NOT auto recomputed; user decides)
-    - No tax logic here (bility typically a transport docket; tax handled at aggregated billing stage)
-    - Save PDF posts FormData(bilty_no, pdf_data) to save_pdf.php (update save_pdf.php if it only expects bill_no)
-
-  Usage:
-    print_bilty_a5.php?id=123
-    Optional: ?auto=1 to auto open print dialog after load
-
-  Adjust styling / fields as necessary.
+  Changes:
+    - When rate == 0, mark Rate as "Fixed" and treat Amount as manually set.
+    - Client-side initializes manual override when rate is fixed.
+    - Editing Rate to a numeric value will re-enable auto-compute.
 */
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -85,9 +67,10 @@ $notes = clean_details_text($bilty['details'] ?? '');
 $qty     = n0($bilty['qty'] ?? 0);
 $km      = n0($bilty['km'] ?? 0);
 $rate    = (float)($bilty['rate'] ?? 0);
-$amount  = (float)($bilty['amount'] ?? 0);
-$advance = (float)($bilty['advance'] ?? 0);
-$balance = (float)($bilty['balance'] ?? ($amount - $advance));
+$amount  = (float)($bilty['amount'] ?? ($km * $rate)); // fallback compute
+
+// If rate is exactly zero, treat this bilty as Fixed-rate (amount stored manually)
+$isFixed = ($rate == 0.0);
 
 ?>
 <!doctype html>
@@ -104,7 +87,18 @@ $balance = (float)($bilty['balance'] ?? ($amount - $advance));
   --font: "Arial","Helvetica",sans-serif;
   --fs: 11px;
   --hair: 0.6px;
-  --accent-bg: #e5e7eb;
+  /* Updated color palette */
+  --primary-color: #06324e;
+  --primary-light: #dbeafe;
+  --primary-dark: #06324e;
+  --accent-bg: #e0e7ff;
+  --header-bg: #06324e;
+  --header-text: #ffffff;
+  --th-bg: #e0f2fe;
+  --th-border: #93c5fd;
+  --row-alt: #f8fafc;
+  --border-color: #cbd5e1;
+  --gradient-header: linear-gradient(to right, #06324e, #06324e);
 }
 
 html,body {
@@ -142,8 +136,8 @@ html,body {
   padding:8px 16px;
   border-radius:999px;
   font-weight:600;
-  background:#dbeafe;
-  color:#1e3a8a;
+  background:var(--primary-light);
+  color:var(--primary-dark);
   box-shadow:0 2px 4px rgba(0,0,0,.08);
 }
 
@@ -164,8 +158,8 @@ html,body {
   transition:background .18s, box-shadow .18s;
 }
 #controlBar button:hover, #controlBar a:hover { background:#f1f5f9; }
-#controlBar .primary-btn { background:#2563eb; color:#fff; border-color:#1d4ed8; }
-#controlBar .primary-btn:hover { background:#1d4ed8; }
+#controlBar .primary-btn { background:var(--primary-color); color:#fff; border-color:var(--primary-dark); }
+#controlBar .primary-btn:hover { background:var(--primary-dark); }
 #controlBar .print-btn { background:#4f46e5; color:#fff; border-color:#4338ca; }
 #controlBar .print-btn:hover{ background:#4338ca; }
 #controlBar .pdf-btn { background:#374151; color:#fff; border-color:#1f2937; }
@@ -184,11 +178,11 @@ html,body {
   width:100%;
   max-width: 430px; /* approximate inner width for A5 with margins */
   background:#fff;
-  border:1px solid #d1d5db;
-  /* box-shadow:0 2px 8px rgba(0,0,0,.12); */
+  border:1px solid var(--border-color);
   padding:14px 16px 18px;
   box-sizing:border-box;
   position:relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .header-row {
@@ -196,9 +190,14 @@ html,body {
   justify-content:space-between;
   align-items:flex-start;
   gap:10px;
-  border-bottom:var(--hair) solid #000;
-  padding-bottom:4px;
-  margin-bottom:6px;
+  border-bottom:var(--hair) solid var(--border-color);
+  padding-bottom:10px;
+  margin-bottom:10px;
+  background: var(--gradient-header);
+  margin: -14px -16px 12px;
+  padding: 12px 16px;
+  border-radius: 6px 6px 0 0;
+  color: var(--header-text);
 }
 
 .brand-left .brand-name {
@@ -207,32 +206,46 @@ html,body {
   font-style:italic;
   letter-spacing:.4px;
   margin-bottom:2px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-.brand-left .brand-sub { font-size:10px; font-weight:600; }
+.brand-left .brand-sub { 
+  font-size:10px; 
+  font-weight:600; 
+  color: rgba(255,255,255,0.9);
+}
 
-.inline-rows { margin-top:4px; font-size:10px; line-height:1.2; }
+.inline-rows { margin-top:4px; font-size:10px; line-height:1.2; color: rgba(255,255,255,0.95); }
 .inline-rows .lbl { font-weight:700; margin-right:4px; }
 
 .section-pair {
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:8px;
+  gap:12px;
+  margin-top:12px;
 }
 
 .panel {
-  border:var(--hair) solid #000;
+  border:var(--hair) solid var(--border-color);
   display:flex;
   flex-direction:column;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .panel-title {
-  background:var(--accent-bg);
+  background:var(--primary-color);
+  color: white;
   font-weight:700;
   font-size:11px;
-  padding:3px 6px;
-  border-bottom:var(--hair) solid #000;
+  padding:4px 8px;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
 }
-.panel-body { padding:6px 6px 4px; font-size:10.5px; }
+.panel-body { 
+  padding:8px 8px 6px; 
+  font-size:10.5px; 
+  background: #fff;
+}
 
 .field-line {
   display:flex;
@@ -240,7 +253,7 @@ html,body {
   gap:4px;
   align-items:flex-start;
 }
-.field-line .flabel { width:60px; font-weight:700; flex-shrink:0; }
+.field-line .flabel { width:60px; font-weight:700; flex-shrink:0; color: var(--primary-dark); }
 .field-line .fval {
   flex:1;
   min-height:16px;
@@ -250,19 +263,22 @@ html,body {
 
 .route-box {
   margin-top:8px;
-  border:var(--hair) solid #000;
+  border:var(--hair) solid var(--border-color);
   padding:6px 6px 4px;
   font-size:11px;
   background:#fff;
   min-height:32px;
   white-space:pre-wrap;
   word-break:break-word;
+  border-radius: 4px;
 }
 
 .items-table-wrap {
-  margin-top:8px;
-  border:var(--hair) solid #000;
+  margin-top:12px;
+  border:var(--hair) solid var(--border-color);
   overflow:hidden;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .items-table {
   width:100%;
@@ -271,41 +287,62 @@ html,body {
   font-size:10.5px;
 }
 .items-table th, .items-table td {
-  border:var(--hair) solid #000;
-  padding:4px 4px;
+  border:var(--hair) solid var(--border-color);
+  padding:6px 6px;
   vertical-align:middle;
 }
 .items-table th {
-  background:#ececec;
+  background: var(--gradient-header);
+  color: white;
   font-weight:700;
-  font-size:10px;
+  font-size:11px;
   text-align:center;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  padding: 8px 6px;
+}
+.items-table tr:nth-child(even) {
+  background-color: var(--row-alt);
 }
 .items-table td.num { text-align:right; font-variant-numeric:tabular-nums; }
 .items-table td.center { text-align:center; }
 
 .amount-summary {
-  margin-top:8px;
+  margin-top:12px;
   width:100%;
-  border:var(--hair) solid #000;
+  border:var(--hair) solid var(--border-color);
   border-collapse:collapse;
   font-size:10.5px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .amount-summary td {
-  border:var(--hair) solid #000;
-  padding:4px 4px;
+  border:var(--hair) solid var(--border-color);
+  padding:6px 8px;
 }
-.amount-summary .label { font-weight:700; width:70%; }
-.amount-summary .val { text-align:right; font-variant-numeric:tabular-nums; }
+.amount-summary .label { 
+  font-weight:700; 
+  width:70%; 
+  background: var(--th-bg);
+  color: var(--primary-dark);
+}
+.amount-summary .val { 
+  text-align:right; 
+  font-variant-numeric:tabular-nums;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
 
 .notes-box {
-  margin-top:8px;
-  border:var(--hair) solid #000;
-  padding:6px 6px 4px;
+  margin-top:12px;
+  border:var(--hair) solid var(--border-color);
+  padding:8px 8px 6px;
   font-size:10.5px;
   min-height:40px;
   white-space:pre-wrap;
   word-break:break-word;
+  border-radius: 6px;
+  background: #fcfcfc;
 }
 
 .signature-block {
@@ -318,11 +355,12 @@ html,body {
 }
 .signature-area {
   flex: 1;
-  border-top:var(--hair) solid #000;
+  border-top:var(--hair) solid var(--border-color);
   padding-top:4px;
   text-align:center;
   font-weight:600;
   min-height:30px;
+  color: var(--primary-dark);
 }
 
 .print-footer-tag {
@@ -333,8 +371,8 @@ html,body {
 
 .inline-input {
   font-size:10px;
-  padding:2px 4px;
-  border:0.7px solid #555;
+  padding:4px 6px;
+  border:0.7px solid var(--border-color);
   border-radius:3px;
   width:100%;
   background:#fff;
@@ -378,6 +416,25 @@ html,body {
   .a5-page { max-width:100%; }
 }
 
+/* Add printable color support */
+@media print {
+  .header-row {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  .panel-title, .items-table th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  .amount-summary .label {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -405,11 +462,10 @@ html,body {
         </div>
       </div>
       <div style="text-align:right; min-width:140px;">
-        <div style="font-size:14px; font-weight:700; letter-spacing:.5px;">BILTY</div>
+        <div style="font-size:16px; font-weight:700; letter-spacing:.5px; margin-bottom:4px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">BILTY</div>
         <div style="margin-top:6px; font-size:10.5px;">
           <div style="margin-bottom:4px;"><strong>No:</strong> <span><?php echo esc($bilty['bilty_no']); ?></span></div>
           <div style="margin-bottom:4px;"><strong>Date:</strong> <span id="bilty_date" class="editable-block"><?php echo esc($dateDisplay); ?></span></div>
-          
         </div>
       </div>
     </div>
@@ -460,29 +516,28 @@ html,body {
       </div>
     </div>
 
-    <!-- <div id="notes_box" class="notes-box editable-block" style="margin-top:10px;">
-      <?php echo nl2br(esc($notes ?: 'Notes...')); ?>
-    </div> -->
-
     <div class="items-table-wrap">
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width:12%;">Qty</th>
-            <th style="width:16%;">KM</th>
-            <th style="width:16%;">Rate</th>
-            <th style="width:20%;">Advance</th>
-            <th style="width:20%;">Balance</th>
-            <th style="width:16%;">Amount</th>
+            <th style="width:18%;">Qty</th>
+            <th style="width:22%;">KM</th>
+            <th style="width:25%;">Rate</th>
+            <th style="width:35%;">Amount</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td class="center amount-cell" data-field="qty" data-type="int"><?php echo $qty; ?></td>
             <td class="center amount-cell" data-field="km" data-type="int"><?php echo $km; ?></td>
-            <td class="center amount-cell" data-field="rate" data-type="float"><?php echo n2($rate); ?></td>
-            <td class="center amount-cell" data-field="advance" data-type="float"><?php echo n2($advance); ?></td>
-            <td class="center amount-cell" data-field="balance" data-type="float"><?php echo n2($balance); ?></td>
+
+            <?php if ($isFixed): ?>
+              <!-- mark fixed: show label and add data-attr so JS knows -->
+              <td class="center amount-cell" data-field="rate" data-type="float" data-rate-fixed="1">Fixed</td>
+            <?php else: ?>
+              <td class="center amount-cell" data-field="rate" data-type="float"><?php echo n2($rate); ?></td>
+            <?php endif; ?>
+
             <td class="center amount-cell" data-field="amount" data-type="float" data-computed="1"><?php echo n2($amount); ?></td>
           </tr>
         </tbody>
@@ -500,9 +555,6 @@ html,body {
       <div class="signature-area">
         Transporter Signature
       </div>
-      <!-- <div class="print-footer-tag">
-        Printed: <?php echo esc(date('d-M-Y H:i')); ?>
-      </div> -->
     </div>
   </div>
 </div>
@@ -523,8 +575,9 @@ html,body {
     'sender_name','vehicle_type','vehicle_no','driver_name','route_text','notes_box'
   ];
 
+  // Initialize manual override based on server-side fixed state
+  let manualAmountOverride = <?php echo $isFixed ? 'true' : 'false'; ?>;
   let editMode = false;
-  let manualAmountOverride = false; // if user directly edits the amount cell
   const toggleBtn   = document.getElementById('toggleEdit');
   const applyBtn    = document.getElementById('applyBtn');
   const printBtn    = document.getElementById('printBtn');
@@ -572,24 +625,41 @@ html,body {
         el.appendChild(inp);
       }
     });
-    // Amount cells
+    // Amount table cells -> inputs
     document.querySelectorAll('.amount-cell').forEach(cell=>{
       if(cell.querySelector('input')) return;
       const txt = cell.textContent.trim();
       const inp = document.createElement('input');
-      inp.type='text';
-      inp.value=txt;
+      inp.type = 'text';
+      inp.value = txt;
       inp.className='inline-input';
       inp.style.textAlign='center';
-      cell.innerHTML='';
+      cell.innerHTML = '';
       cell.appendChild(inp);
+
       if(cell.dataset.field==='amount'){
+        // manual edit of amount -> enforce manual override
         inp.addEventListener('input',()=> { manualAmountOverride = true; recompute(); });
-      } else {
+      } else if(cell.dataset.field==='rate' || cell.dataset.field==='km'){
+        // for rate/km: if rate becomes numeric, re-enable auto compute
         inp.addEventListener('input',()=> {
-          if(cell.dataset.field==='km' || cell.dataset.field==='rate'){
-            // Changing km or rate re-enables auto compute
-            manualAmountOverride = false;
+          if(cell.dataset.field==='rate'){
+            const v = inp.value.replace(/,/g,'').trim();
+            const num = parseFloat(v);
+            if (!isNaN(num)) {
+              // user supplied numeric rate -> allow auto compute
+              manualAmountOverride = false;
+            } else {
+              // non-numeric (e.g. still "Fixed") -> keep manual override
+              manualAmountOverride = true;
+            }
+          } else {
+            // km changed -> if rate is numeric, allow auto compute
+            const rateCell = document.querySelector('.amount-cell[data-field="rate"]');
+            const rateInp = rateCell?.querySelector('input');
+            const rateVal = rateInp ? rateInp.value : (rateCell ? rateCell.textContent : '');
+            const rnum = parseFloat((''+rateVal).replace(/,/g,'').trim());
+            if(!isNaN(rnum)) manualAmountOverride = false;
           }
           recompute();
         });
@@ -644,21 +714,18 @@ html,body {
 
     let km = getFieldVal('km');
     let rate = getFieldVal('rate');
-    let qty = getFieldVal('qty');
-    let advance = getFieldVal('advance');
-    let balance = getFieldVal('balance');
     let amountCell = document.querySelector('.amount-cell[data-field="amount"]');
 
     if(!manualAmountOverride){
-      const amount = km * rate; // or qty*rate depending on your business rule
+      const computedAmount = km * rate; // business rule: KM * Rate
       if(editMode && amountCell){
         let inp = amountCell.querySelector('input');
-        if(inp) inp.value = format2(amount);
+        if(inp) inp.value = format2(computedAmount);
       } else if(amountCell){
-        amountCell.textContent = format2(amount);
+        amountCell.textContent = format2(computedAmount);
       }
     } else {
-      // If manually overridden, ensure proper formatting (when leaving edit mode)
+      // keep user-entered amount
     }
 
     // Update total
@@ -734,10 +801,10 @@ html,body {
       progressText.textContent='Uploading...';
 
       const fd = new FormData();
-      fd.append('bill_no', biltyNo); // reuse field name used by save_pdf.php
+      fd.append('bilty_no', biltyNo);
       fd.append('pdf_data', base64Data);
 
-      const resp = await fetch('save_pdf.php',{method:'POST',body:fd});
+      const resp = await fetch('save_bilty_pdf.php',{method:'POST',body:fd});
       const data = await resp.json();
       if(!data.ok) throw new Error(data.error||'Upload failed');
 

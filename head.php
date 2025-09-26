@@ -21,6 +21,8 @@
   html,body { color: var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 </style>
 <link href="output.css" rel="stylesheet">
+  <link rel="stylesheet" href="fontawesome/css/all.min.css">
+
 <!-- Tailwind runtime config (MUST be before the CDN script) -->
 <script>
   window.tailwind = window.tailwind || {};
