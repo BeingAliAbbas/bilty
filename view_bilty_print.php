@@ -81,7 +81,7 @@ $isFixed = ($rate == 0.0);
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="pdf.js"></script>
 <style>
-@page { size: A5 portrait; margin: 8mm; }
+@page { size: A5 portrait; margin: 0mm; }
 
 :root {
   --font: "Arial","Helvetica",sans-serif;
@@ -176,45 +176,46 @@ html,body {
 
 .a5-page {
   width:100%;
-  max-width: 430px; /* approximate inner width for A5 with margins */
+  max-width: 470px; /* approximate inner width for A5 with margins */
   background:#fff;
   border:1px solid var(--border-color);
   padding:14px 16px 18px;
   box-sizing:border-box;
   position:relative;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: -10px;
 }
 
 .header-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:10px;
-  border-bottom:var(--hair) solid var(--border-color);
-  padding-bottom:10px;
-  margin-bottom:10px;
-  background: var(--gradient-header);
-  margin: -14px -16px 12px;
-  padding: 12px 16px;
-  border-radius: 6px 6px 0 0;
-  color: var(--header-text);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: var(--hair) solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    background: var(--gradient-header);
+    margin: -20px -16px 13px;
+    padding: 30px 9px;
+    /* border-radius: 6px 6px 0 0; */
+    color: var(--header-text);
 }
 
 .brand-left .brand-name {
-  font-size:20px;
+  font-size:32px;           /* increased from 20px */
   font-weight:700;
   font-style:italic;
   letter-spacing:.4px;
-  margin-bottom:2px;
+  margin-bottom:4px;        /* slightly more space under */
   color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-.brand-left .brand-sub { 
-  font-size:10px; 
-  font-weight:600; 
-  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.18);
 }
 
+.brand-left .brand-sub { 
+  font-size:16px;           /* increased from 10px */
+  font-weight:600; 
+  color: rgba(255,255,255,0.92);
+}
 .inline-rows { margin-top:4px; font-size:10px; line-height:1.2; color: rgba(255,255,255,0.95); }
 .inline-rows .lbl { font-weight:700; margin-right:4px; }
 
@@ -236,14 +237,15 @@ html,body {
 .panel-title {
   background:var(--primary-color);
   color: white;
-  font-weight:700;
-  font-size:11px;
-  padding:4px 8px;
+  font-weight:7 00;
+  font-size:16px;
+  padding: 8px 12px;
   text-shadow: 0 1px 1px rgba(0,0,0,0.1);
 }
 .panel-body { 
   padding:8px 8px 6px; 
-  font-size:10.5px; 
+  font-size: 15px;
+  min-height: 22px; 
   background: #fff;
 }
 
@@ -256,7 +258,7 @@ html,body {
 .field-line .flabel { width:60px; font-weight:700; flex-shrink:0; color: var(--primary-dark); }
 .field-line .fval {
   flex:1;
-  min-height:16px;
+  min-height:22px;
   line-height:1.2;
   word-break:break-word;
 }
@@ -284,7 +286,7 @@ html,body {
   width:100%;
   border-collapse:collapse;
   table-layout:fixed;
-  font-size:10.5px;
+  font-size:15px;
 }
 .items-table th, .items-table td {
   border:var(--hair) solid var(--border-color);
@@ -295,7 +297,7 @@ html,body {
   background: var(--gradient-header);
   color: white;
   font-weight:700;
-  font-size:11px;
+  font-size:15px;
   text-align:center;
   text-shadow: 0 1px 1px rgba(0,0,0,0.1);
   padding: 8px 6px;
@@ -311,7 +313,7 @@ html,body {
   width:100%;
   border:var(--hair) solid var(--border-color);
   border-collapse:collapse;
-  font-size:10.5px;
+  font-size:15px;
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -464,8 +466,8 @@ html,body {
       <div style="text-align:right; min-width:140px;">
         <div style="font-size:16px; font-weight:700; letter-spacing:.5px; margin-bottom:4px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">BILTY</div>
         <div style="margin-top:6px; font-size:10.5px;">
-          <div style="margin-bottom:4px;"><strong>No:</strong> <span><?php echo esc($bilty['bilty_no']); ?></span></div>
-          <div style="margin-bottom:4px;"><strong>Date:</strong> <span id="bilty_date" class="editable-block"><?php echo esc($dateDisplay); ?></span></div>
+          <div style="margin-bottom:4px; font-size:15.5px;"><strong>No:</strong> <span><?php echo esc($bilty['bilty_no']); ?></span></div>
+          <div style="margin-bottom:4px; font-size:15.5px;"><strong>Date:</strong> <span id="bilty_date" class="editable-block"><?php echo esc($dateDisplay); ?></span></div>
         </div>
       </div>
     </div>
