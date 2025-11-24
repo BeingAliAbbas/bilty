@@ -5,14 +5,28 @@
  * All requests are routed through this file
  */
 
-// Start session
+// Start session with secure settings
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_samesite', 'Strict');
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 
-// Define paths
+// Define and validate paths
 define('ROOT_PATH', dirname(__DIR__));
 define('APP_PATH', ROOT_PATH . '/app');
 define('CORE_PATH', ROOT_PATH . '/core');
 define('PUBLIC_PATH', ROOT_PATH . '/public');
+
+// Validate critical directories exist
+if (!is_dir(APP_PATH) || !is_dir(CORE_PATH)) {
+    die('Critical application directories are missing. Please check installation.');
+}
+
+// Load configuration
+require_once ROOT_PATH . '/config/app.php';
 
 // Load core classes
 require_once CORE_PATH . '/Database.php';
@@ -64,11 +78,18 @@ $router->setNotFound(function() {
 try {
     $router->dispatch();
 } catch (Exception $e) {
+    // Log error to file
+    error_log('Application Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+    
     http_response_code(500);
     echo '<h1>500 - Internal Server Error</h1>';
     echo '<p>An error occurred while processing your request.</p>';
-    if (ini_get('display_errors')) {
+    
+    // Only show details in development mode
+    if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
         echo '<pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
         echo '<pre>' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
+    } else {
+        echo '<p>Please contact the administrator if the problem persists.</p>';
     }
 }

@@ -8,12 +8,18 @@ class Database {
     private static $instance = null;
     private $connection;
     
-    private $host = '127.0.0.1';
-    private $user = 'root';
-    private $pass = '';
-    private $dbname = 'bilty_db';
+    private $host;
+    private $user;
+    private $pass;
+    private $dbname;
     
     private function __construct() {
+        // Use config constants if available, otherwise fallback to defaults
+        $this->host = defined('DB_HOST') ? DB_HOST : '127.0.0.1';
+        $this->user = defined('DB_USER') ? DB_USER : 'root';
+        $this->pass = defined('DB_PASS') ? DB_PASS : '';
+        $this->dbname = defined('DB_NAME') ? DB_NAME : 'bilty_db';
+        
         $this->connection = new mysqli($this->host, $this->user, $this->pass, $this->dbname);
         
         if ($this->connection->connect_error) {
