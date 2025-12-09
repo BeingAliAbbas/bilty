@@ -32,17 +32,22 @@ class CreateConsignmentsTable extends Migration
             ],
             'driver_name' => [
                 'type' => 'VARCHAR',
-                'constraint' => 255,
+                'constraint' => 100,
+                'null' => true,
+            ],
+            'driver_number' => [
+                'type' => 'VARCHAR',
+                'constraint' => 30,
                 'null' => true,
             ],
             'vehicle_type' => [
                 'type' => 'VARCHAR',
-                'constraint' => 100,
+                'constraint' => 50,
                 'null' => true,
             ],
             'sender_name' => [
                 'type' => 'VARCHAR',
-                'constraint' => 255,
+                'constraint' => 100,
                 'null' => true,
             ],
             'from_city' => [
@@ -72,11 +77,6 @@ class CreateConsignmentsTable extends Migration
                 'constraint' => '10,2',
                 'default' => 0.00,
             ],
-            'rate_type' => [
-                'type' => 'ENUM',
-                'constraint' => ['Fixed', 'PerKM'],
-                'default' => 'PerKM',
-            ],
             'amount' => [
                 'type' => 'DECIMAL',
                 'constraint' => '10,2',
@@ -92,11 +92,11 @@ class CreateConsignmentsTable extends Migration
                 'constraint' => '10,2',
                 'default' => 0.00,
             ],
-            'created_at' => [
-                'type' => 'DATETIME',
+            'bill_number' => [
+                'type' => 'INT',
                 'null' => true,
             ],
-            'updated_at' => [
+            'billed_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
             ],
@@ -104,10 +104,8 @@ class CreateConsignmentsTable extends Migration
         
         $this->forge->addKey('id', true);
         $this->forge->addKey('company_id');
-        $this->forge->addKey('bilty_no');
-        $this->forge->addKey('date');
-        $this->forge->addKey(['from_city', 'to_city']);
-        $this->forge->addForeignKey('company_id', 'companies', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addUniqueKey('bilty_no');
+        $this->forge->addForeignKey('company_id', 'companies', 'id', '', 'CASCADE');
         $this->forge->createTable('consignments');
     }
 

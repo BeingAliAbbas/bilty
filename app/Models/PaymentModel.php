@@ -13,7 +13,7 @@ class PaymentModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'consignment_id', 'payment_date', 'amount', 'payment_method', 'notes'
+        'consignment_id', 'payment_date', 'amount', 'method', 'notes'
     ];
 
     protected array $casts = [
@@ -21,10 +21,9 @@ class PaymentModel extends Model
         'amount' => 'float',
     ];
 
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
 
     protected $validationRules      = [
         'consignment_id' => 'required|is_natural_no_zero',

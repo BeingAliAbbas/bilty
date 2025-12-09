@@ -13,27 +13,27 @@ class BillModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'company_id', 'bill_no', 'issue_date', 'gross_amount', 'tax_amount',
-        'net_amount', 'payment_status', 'payment_date', 'payment_note',
-        'status', 'pdf_path'
+        'bill_no', 'financial_year', 'issue_date', 'company_id', 'consignment_ids',
+        'gross_amount', 'tax_percent', 'tax_amount', 'net_amount', 'meta',
+        'status', 'payment_status', 'payment_date', 'payment_note', 
+        'printed_at', 'pdf_path'
     ];
 
     protected array $casts = [
-        'company_id' => 'int',
+        'company_id' => '?int',
         'gross_amount' => 'float',
+        'tax_percent' => 'float',
         'tax_amount' => 'float',
         'net_amount' => 'float',
     ];
 
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
 
     protected $validationRules      = [
-        'company_id' => 'required|is_natural_no_zero',
-        'bill_no' => 'required|max_length[50]',
         'issue_date' => 'required|valid_date',
+        'consignment_ids' => 'required',
         'net_amount' => 'required|decimal',
     ];
 
@@ -43,7 +43,7 @@ class BillModel extends Model
     public function getWithCompany($id = null)
     {
         $builder = $this->select('bills.*, companies.name as company_name')
-                        ->join('companies', 'companies.id = bills.company_id');
+                        ->join('companies', 'companies.id = bills.company_id', 'left');
         
         if ($id !== null) {
             return $builder->where('bills.id', $id)->first();
@@ -55,7 +55,7 @@ class BillModel extends Model
     public function search(array $filters)
     {
         $builder = $this->select('bills.*, companies.name as company_name')
-                        ->join('companies', 'companies.id = bills.company_id');
+                        ->join('companies', 'companies.id = bills.company_id', 'left');
         
         if (!empty($filters['q'])) {
             $builder->groupStart()

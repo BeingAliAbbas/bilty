@@ -13,9 +13,9 @@ class ConsignmentModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'company_id', 'bilty_no', 'date', 'vehicle_no', 'driver_name',
+        'company_id', 'bilty_no', 'date', 'vehicle_no', 'driver_name', 'driver_number',
         'vehicle_type', 'sender_name', 'from_city', 'to_city', 'qty',
-        'details', 'km', 'rate', 'rate_type', 'amount', 'advance', 'balance'
+        'details', 'km', 'rate', 'amount', 'advance', 'balance', 'bill_number', 'billed_at'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -29,9 +29,10 @@ class ConsignmentModel extends Model
         'amount' => 'float',
         'advance' => 'float',
         'balance' => 'float',
+        'bill_number' => '?int',
     ];
 
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';

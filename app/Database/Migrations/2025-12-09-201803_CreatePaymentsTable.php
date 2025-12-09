@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreatePaymentsTable extends Migration
 {
@@ -11,44 +12,37 @@ class CreatePaymentsTable extends Migration
         $this->forge->addField([
             'id' => [
                 'type' => 'INT',
-                'unsigned' => true,
                 'auto_increment' => true,
             ],
             'consignment_id' => [
                 'type' => 'INT',
-                'unsigned' => true,
             ],
             'payment_date' => [
                 'type' => 'DATE',
             ],
             'amount' => [
                 'type' => 'DECIMAL',
-                'constraint' => '10,2',
-                'default' => 0.00,
+                'constraint' => '12,2',
             ],
-            'payment_method' => [
+            'method' => [
                 'type' => 'VARCHAR',
                 'constraint' => 50,
-                'default' => 'cash',
+                'null' => true,
             ],
             'notes' => [
-                'type' => 'TEXT',
+                'type' => 'VARCHAR',
+                'constraint' => 255,
                 'null' => true,
             ],
             'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type' => 'TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
         ]);
         
         $this->forge->addKey('id', true);
         $this->forge->addKey('consignment_id');
-        $this->forge->addKey('payment_date');
-        $this->forge->addForeignKey('consignment_id', 'consignments', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('consignment_id', 'consignments', 'id', 'CASCADE', '');
         $this->forge->createTable('payments');
     }
 

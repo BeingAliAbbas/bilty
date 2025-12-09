@@ -28,7 +28,7 @@ class VehicleMaintenanceModel extends Model
     protected $validationRules      = [
         'entry_date' => 'required|valid_date',
         'vehicle_no' => 'required|max_length[50]',
-        'expense_type' => 'required|max_length[100]',
+        'expense_type' => 'required|max_length[120]',
         'amount' => 'required|decimal',
     ];
 

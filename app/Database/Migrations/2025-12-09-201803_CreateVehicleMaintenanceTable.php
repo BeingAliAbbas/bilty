@@ -3,6 +3,7 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
+use CodeIgniter\Database\RawSql;
 
 class CreateVehicleMaintenanceTable extends Migration
 {
@@ -11,7 +12,6 @@ class CreateVehicleMaintenanceTable extends Migration
         $this->forge->addField([
             'id' => [
                 'type' => 'INT',
-                'unsigned' => true,
                 'auto_increment' => true,
             ],
             'entry_date' => [
@@ -23,11 +23,11 @@ class CreateVehicleMaintenanceTable extends Migration
             ],
             'expense_type' => [
                 'type' => 'VARCHAR',
-                'constraint' => 100,
+                'constraint' => 120,
             ],
             'amount' => [
                 'type' => 'DECIMAL',
-                'constraint' => '10,2',
+                'constraint' => '12,2',
                 'default' => 0.00,
             ],
             'narration' => [
@@ -35,18 +35,19 @@ class CreateVehicleMaintenanceTable extends Migration
                 'null' => true,
             ],
             'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type' => 'TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP'),
             ],
             'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type' => 'TIMESTAMP',
+                'default' => new RawSql('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
             ],
         ]);
         
         $this->forge->addKey('id', true);
-        $this->forge->addKey('entry_date');
-        $this->forge->addKey('vehicle_no');
+        $this->forge->addKey('entry_date', false, false, 'idx_entry_date');
+        $this->forge->addKey('vehicle_no', false, false, 'idx_vehicle_no');
+        $this->forge->addKey('expense_type', false, false, 'idx_expense_type');
         $this->forge->createTable('vehicle_maintenance');
     }
 
