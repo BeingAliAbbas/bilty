@@ -1,68 +1,152 @@
-# CodeIgniter 4 Application Starter
+# Bilty Management System (CodeIgniter 4 MVC)
 
-## What is CodeIgniter?
+A complete bilty (consignment note) management system built with CodeIgniter 4 framework. This system helps transport and logistics businesses manage their bilty/consignment operations, billing, payments, and vehicle maintenance.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Features
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+### Core Functionality
+- **Bilty Management**: Create, view, edit, and search consignment records
+- **Company Management**: Manage customer/company information
+- **Bill Generation**: Create and manage bills for companies
+- **Payment Tracking**: Record and track payments against consignments
+- **Vehicle Maintenance**: Track vehicle expenses and maintenance
+- **Reporting**: Comprehensive reports with filters and exports
+- **PDF Generation**: Print bilty and bills as PDF
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+### Security & Authentication
+- **User Authentication**: Secure login/logout system
+- **Role-Based Access**: Admin and user roles with different permissions
+- **Password Reset**: Secure password recovery via email/token
+- **Activity Logging**: Track all critical actions for audit trail
+- **CSRF Protection**: Enabled globally for form security
+- **Input Validation**: Server-side validation on all inputs
+- **XSS Prevention**: Auto-escaping in views
+- **SQL Injection Prevention**: Using Query Builder and prepared statements
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+### Performance & Scalability
+- **Server-Side Pagination**: Efficient handling of large datasets
+- **Database Indexes**: Optimized queries with proper indexing
+- **Foreign Key Constraints**: Data integrity at database level
+- **Query Builder**: Clean, secure database queries
+- **Caching**: Query and view caching where appropriate
 
-## Installation & updates
+## Technology Stack
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+- **Framework**: CodeIgniter 4.6.3
+- **PHP**: 8.1+ required
+- **Database**: MySQL 5.7+ / MariaDB 10.3+
+- **Frontend**: Bootstrap 5 (local), FontAwesome (local)
+- **PDF**: TCPDF/mPDF for PDF generation
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+## Quick Start
 
-## Setup
+### For New Installation
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+1. Install dependencies:
+   ```bash
+   composer install --no-dev
+   ```
 
-## Important Change with index.php
+2. Configure environment:
+   ```bash
+   cp env .env
+   # Edit .env with your database credentials
+   php spark key:generate --show
+   # Add generated key to .env
+   ```
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+3. Run migrations:
+   ```bash
+   php spark migrate
+   php spark db:seed InitialUserSeeder
+   ```
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+4. Access the application:
+   - URL: `http://localhost:8080` (using `php spark serve`)
+   - Username: `admin`
+   - Password: `admin123`
 
-**Please** read the user guide for a better explanation of how CI4 works!
+See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions.
 
-## Repository Management
+### For Migration from Legacy System
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+If you're migrating from the old PHP system, follow the comprehensive guide in [MIGRATION.md](MIGRATION.md).
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+## Documentation
 
-## Server Requirements
+- **[INSTALLATION.md](INSTALLATION.md)** - Complete installation guide
+- **[MIGRATION.md](MIGRATION.md)** - Migration from legacy PHP system
+- **[SECURITY.md](docs/SECURITY.md)** - Security features and best practices
 
-PHP version 8.1 or higher is required, with the following extensions installed:
+## Key Improvements Over Legacy System
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+### Architecture
+- ✅ **MVC Pattern**: Separation of concerns
+- ✅ **HMVC Ready**: Modular structure
+- ✅ **PSR-4 Autoloading**: Modern PHP standards
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - If you are still using PHP 7.4 or 8.0, you should upgrade immediately.
-> - The end of life date for PHP 8.1 will be December 31, 2025.
+### Security
+- ✅ **Authentication System**: Secure user login
+- ✅ **Password Hashing**: Bcrypt for password storage
+- ✅ **CSRF Protection**: Global CSRF tokens
+- ✅ **Input Validation**: Server-side validation
+- ✅ **Activity Logging**: Audit trail for critical actions
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+### Database
+- ✅ **Migrations**: Version-controlled schema
+- ✅ **Foreign Keys**: Data integrity constraints
+- ✅ **Indexes**: Performance optimization
+- ✅ **Query Builder**: Clean, maintainable queries
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Database Schema
+
+### Tables
+
+1. **companies**: Customer/company information
+2. **consignments**: Bilty/consignment records
+3. **bills**: Billing records for companies
+4. **payments**: Payment tracking for consignments
+5. **vehicle_maintenance**: Vehicle expense tracking
+6. **users**: System users with authentication
+7. **activity_logs**: Audit trail of actions
+
+## Development
+
+### Running Locally
+
+```bash
+# Start development server
+php spark serve
+
+# Run migrations
+php spark migrate
+
+# Create new migration
+php spark make:migration CreateTableName
+```
+
+## Production Deployment
+
+1. Set environment to production in `.env`
+2. Optimize autoloader: `composer install --no-dev --optimize-autoloader`
+3. Set proper permissions
+4. Configure web server
+5. Enable SSL/HTTPS
+6. Set up scheduled tasks
+7. Configure backups
+
+## Support & Contact
+
+**Developer**: Ali Abbas  
+**Phone**: +92 348 3469617  
+
+## Changelog
+
+### Version 2.0.0 (2025-12-09)
+- Complete migration to CodeIgniter 4 MVC
+- Implemented authentication and authorization
+- Database migrations with proper schema
+- Comprehensive security improvements
+- Server-side pagination and filtering
+- Activity logging for audit trail
+- Complete documentation
